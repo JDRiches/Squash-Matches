@@ -128,9 +128,14 @@ async def get_logged_in_user(current_user: Annotated[UserBase, Depends(get_curre
 async def register_new_user(user: UserCreate, session: DatabaseSessionDep):
     """Register a new user with the app"""
     create_user = UserCreate.model_validate(user)
-
     db_user = User(**create_user.model_dump())
     
+    if get_user(db_user.username, session): 
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Username already exists",
+            )
+
     hashed_password = pwd_context.hash(user.password)
     db_user.hashed_password = hashed_password
 
