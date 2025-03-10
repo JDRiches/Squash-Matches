@@ -14,11 +14,14 @@ class UserBase(SQLModel):
     username: str = Field(default=None, index=True)
     email: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
-    disabled: bool | None = Field(default=None)
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     hashed_password: str
+    disabled: bool | None = Field(default=None)
+
+class UserCreate(UserBase):
+    password: str = Field(default=None)
 
 class Token(BaseModel):
     access_token: str
@@ -89,15 +92,12 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)], sessio
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get("sub")
-        print(username)
         if username is None:
             raise credentials_exception
         token_data = TokenData(username=username)
     except jwt.InvalidTokenError:
         raise credentials_exception
-    print(token_data.username)
     user = get_user(token_data.username, session)
-    print(user)
     if user is None:
         raise credentials_exception
     return user
@@ -123,3 +123,18 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
 async def get_logged_in_user(current_user: Annotated[UserBase, Depends(get_current_user)]):
     """Endpoint to get details of user currently logged in"""
     return current_user
+
+@user_router.post("/register", response_model=UserBase)
+async def register_new_user(user: UserCreate, session: DatabaseSessionDep):
+    """Register a new user with the app"""
+    create_user = UserCreate.model_validate(user)
+
+    db_user = User(**create_user.model_dump())
+    
+    hashed_password = pwd_context.hash(user.password)
+    db_user.hashed_password = hashed_password
+
+    session.add(db_user)
+    session.commit()
+    session.refresh(db_user)
+    return db_user

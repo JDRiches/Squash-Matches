@@ -17,7 +17,7 @@ DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}"
 engine = create_engine(DATABASE_URL)
 
 def get_database_session():
-    """Gets a database session, ensures each requrest gets its own session"""
+    """Gets a database session, ensures each request gets its own session"""
     with Session(engine) as session:
         yield session
 
