@@ -42,7 +42,7 @@ def get_user(username: str, session: Session) -> Optional[User]:
     user = result.first()
     return user
 
-async def get_current_user(token: OAuth2SchemeDep, session: DatabaseSessionDep):
+async def get_current_user(token: OAuth2SchemeDep, session: DatabaseSessionDep) -> Optional[User]:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",

@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlmodel import Field, SQLModel, select, or_
 from datetime import datetime
 
@@ -43,9 +43,17 @@ async def submit_match(match: MatchBase, user: GetUserDep, session: DatabaseSess
 
     return db_match
 
-@matches_router.get("/history", response_model=list[Match])
-async def get_match_history(user_id: int, session: DatabaseSessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100):
+@matches_router.get("/history/{user_id}", response_model=list[Match])
+async def get_match_history(user_id: int, user: GetUserDep, session: DatabaseSessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100):
     """Get the match history for a user"""
-    #TODO: Make this so only a user can only see their own matches
+
+    # Can only get the match history of yourself, maybe from friends later
+    if user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid permissions",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
     matches = session.exec(select(Match).where(or_(Match.p1_id == user_id, Match.p2_id == user_id)).offset(offset).limit(limit)).all()
     return matches
