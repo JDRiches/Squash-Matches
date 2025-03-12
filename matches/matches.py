@@ -1,5 +1,6 @@
-from fastapi import APIRouter
-from sqlmodel import Field, SQLModel
+from typing import Annotated
+from fastapi import APIRouter, Query
+from sqlmodel import Field, SQLModel, select, or_
 from datetime import datetime
 
 from ..dependencies import DatabaseSessionDep, GetUserDep
@@ -26,6 +27,7 @@ matches_router = APIRouter(
 
 @matches_router.post("/submit")
 async def submit_match(match: MatchBase, user: GetUserDep, session: DatabaseSessionDep):
+    """Create a match, with the owner being the user who submitted the match"""
     create_match = MatchBase.model_validate(match)
     db_match = Match(**create_match.model_dump())
     db_match.owner = user.id
@@ -41,4 +43,9 @@ async def submit_match(match: MatchBase, user: GetUserDep, session: DatabaseSess
 
     return db_match
 
-
+@matches_router.get("/history", response_model=list[Match])
+async def get_match_history(user_id: int, session: DatabaseSessionDep, offset: int = 0, limit: Annotated[int, Query(le=100)] = 100):
+    """Get the match history for a user"""
+    #TODO: Make this so only a user can only see their own matches
+    matches = session.exec(select(Match).where(or_(Match.p1_id == user_id, Match.p2_id == user_id)).offset(offset).limit(limit)).all()
+    return matches
