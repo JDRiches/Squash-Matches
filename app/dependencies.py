@@ -1,5 +1,6 @@
 from typing import Annotated, Optional
 
+from decouple import config
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -12,15 +13,8 @@ SECRET_KEY = "ba00cc705314719c9de5f15c5659c41615bd15eeef3ea25550954070ca190e06"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-
-USERNAME = "root"
-PASSWORD = "password"
-HOST = "localhost"  # Use 'host.docker.internal' if accessing from another container
-PORT = 3306
-DATABASE = "squash_db"
-
 # Create SQLAlchemy engine
-DATABASE_URL = f"mysql+pymysql://{USERNAME}:{PASSWORD}@{HOST}:{PORT}/{DATABASE}"
+DATABASE_URL = config("DATABASE_URL")
 
 engine = create_engine(DATABASE_URL)
 
