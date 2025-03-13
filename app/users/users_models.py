@@ -6,6 +6,7 @@ class UserBase(SQLModel):
     username: str = Field(default=None, index=True)
     email: str | None = Field(default=None)
     full_name: str | None = Field(default=None)
+    profile_pic_url: str | None = Field(default=None)
 
 class User(UserBase, table=True):
     id: int | None = Field(default=None, primary_key=True)

@@ -14,7 +14,6 @@ DATABASE_URL = config("DATABASE_URL")
 
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Squash-Matches"))
 sys.path.insert(0, project_root)  # Insert at the beginning of the path
-print(sys.path)
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
