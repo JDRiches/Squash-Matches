@@ -6,17 +6,14 @@ from fastapi.security import OAuth2PasswordBearer
 import jwt
 from sqlmodel import SQLModel, Session, create_engine, select
 
-from .users.users_models import User, TokenData, UserBase
+from .users.users_models import User, TokenData
 
 
 SECRET_KEY = "ba00cc705314719c9de5f15c5659c41615bd15eeef3ea25550954070ca190e06"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
-# Create SQLAlchemy engine
-DATABASE_URL = config("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL)
 
 def get_database_session():
     """Gets a database session, ensures each request gets its own session"""
@@ -55,7 +52,7 @@ async def get_current_user(token: OAuth2SchemeDep, session: DatabaseSessionDep) 
         raise credentials_exception
     return user
 
-GetUserDep = Annotated[UserBase, Depends(get_current_user)]
+GetUserDep = Annotated[User, Depends(get_current_user)]
 
 
 

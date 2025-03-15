@@ -1,20 +1,58 @@
-from pydantic import BaseModel
-from sqlmodel import Field, SQLModel
+from typing import Annotated, Optional
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 
+PyObjectId = Annotated[str, BeforeValidator(str)]
 
-class UserBase(SQLModel):
-    username: str = Field(default=None, index=True)
-    email: str | None = Field(default=None)
-    full_name: str | None = Field(default=None)
+class UserPublic(BaseModel):
+    username: str = Field()
+    email: str  = Field()
+    full_name: str = Field()
     profile_pic_url: str | None = Field(default=None)
 
-class User(UserBase, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    hashed_password: str
-    disabled: bool | None = Field(default=None)
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "username": "jdoe",
+                "email": "jdoe@example.com",
+                "full_name": "John Doe",
+                "profile_pic_url": "somecdn.com/sfeesfsefjnewg",
+                "hashed_password": "hfebhufewhuwfehuwfe",
+                "disabled": "false",
+            }
+        },
+    )
 
-class UserCreate(UserBase):
-    password: str = Field(default=None)
+class User(BaseModel):
+    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+    username: str = Field()
+    email: str  = Field()
+    full_name: str = Field()
+    profile_pic_url: str | None = Field(default=None)
+    hashed_password: str = Field()
+    disabled: bool = Field(default=False)
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_schema_extra={
+            "example": {
+                "username": "jdoe",
+                "email": "jdoe@example.com",
+                "full_name": "John Doe",
+                "profile_pic_url": "somecdn.com/sfeesfsefjnewg",
+                "hashed_password": "hfebhufewhuwfehuwfe",
+                "disabled": "false",
+            }
+        },
+    )
+
+class UserCreate(BaseModel):
+    username: str = Field()
+    email: str  = Field()
+    full_name: str = Field()
+    password: str = Field()
 
 class Token(BaseModel):
     access_token: str
