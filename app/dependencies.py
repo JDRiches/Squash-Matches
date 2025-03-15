@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from decouple import config
+#from decouple import config
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 import jwt
@@ -8,17 +8,20 @@ from sqlmodel import SQLModel, Session, create_engine, select
 
 from .users.users_models import User, TokenData
 
+import os
+from motor import motor_asyncio
+from dotenv import load_dotenv
 
 SECRET_KEY = "ba00cc705314719c9de5f15c5659c41615bd15eeef3ea25550954070ca190e06"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-
-
+load_dotenv()
 
 def get_database_session():
     """Gets a database session, ensures each request gets its own session"""
-    with Session(engine) as session:
-        yield session
+    DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING")
+    client = motor_asyncio.AsyncIOMotorClient(DB_CONNECTION_STRING)  
+    yield client.get_database("squash_db").get_collection()
 
 DatabaseSessionDep = Annotated[Session, Depends(get_database_session)]
 

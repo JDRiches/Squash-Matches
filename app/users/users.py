@@ -1,3 +1,4 @@
+import os
 from .users_models import Token, TokenData, User, UserCreate, UserPublic
 from ..dependencies import ACCESS_TOKEN_EXPIRE_MINUTES, ALGORITHM, SECRET_KEY, DatabaseSessionDep, GetUserDep, get_user
 
@@ -8,12 +9,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 import jwt
 
-from sqlmodel import Session
 from passlib.context import CryptContext
 
-from decouple import config
-from motor import motor_asyncio
-
+from motor.motor_asyncio import AsyncIOMotorCollection
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 user_router = APIRouter(
@@ -68,39 +66,18 @@ user_router = APIRouter(
 #     return current_user
 
 @user_router.post("/register", response_model=UserPublic)
-async def register_new_user(user: UserCreate):
+async def register_new_user(user: UserCreate, db: DatabaseSessionDep):
     """Register a new user with the app"""
-    print("starting connection")
-    DB_CONNECTION_STRING = config("DB_CONNECTION_STRING")
-    client = motor_asyncio.AsyncIOMotorClient(DB_CONNECTION_STRING)
-    print("client made")
-    db = client.get_database("sqaush_db")
-    print("datavase got")
-    users_collection = db.get_collection("users")
-    print("collection got")
 
-    user = User(
-        username="jriches",
-        email="jriches@mail.com",
-        full_name="Jack Riches",
-        hashed_password="$2y$10$wQ7RQxStekc2SHykQQPmEuapOg64b5QhIWHLaJwfsVokyBFZLtRSy",
-    )
-    new_user = await users_collection.insert_one(user.model_dump(by_alias=True, exclude=["id"]))
-
-    return
     create_user = UserCreate.model_validate(user)
     db_user = User(**create_user.model_dump())
-    
-    if get_user(db_user.username, session): 
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Username already exists",
-            )
+
+    # Check if the user already exists in the database
 
     hashed_password = pwd_context.hash(user.password)
     db_user.hashed_password = hashed_password
 
-    session.add(db_user)
-    session.commit()
-    session.refresh(db_user)
-    return db_user
+    users_collection: AsyncIOMotorCollection = db.get_collection("users")
+    new_user = await users_collection.insert_one(db_user.model_dump(by_alias=True, exclude=["id"]))
+    created_user = await users_collection.find_one({"_id": new_user.inserted_id})
+    return created_user

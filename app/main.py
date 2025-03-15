@@ -1,8 +1,5 @@
 from fastapi import Depends, FastAPI
 
-from motor import motor_asyncio
-
-from decouple import config
 from .users.users import user_router
 from .users.users_models import User
 

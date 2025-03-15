@@ -30,7 +30,7 @@ class User(BaseModel):
     email: str  = Field()
     full_name: str = Field()
     profile_pic_url: str | None = Field(default=None)
-    hashed_password: str = Field()
+    hashed_password: str | None = Field(default=None)
     disabled: bool = Field(default=False)
 
     model_config = ConfigDict(
