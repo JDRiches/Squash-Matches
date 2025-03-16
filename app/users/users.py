@@ -68,7 +68,7 @@ async def get_logged_in_user(current_user: GetUserDep):
     return current_user
 
 @user_router.post("/register", response_model=UserPublic)
-async def register_new_user(user: UserCreate, db: DatabaseClientDep):
+async def register_new_user(user: UserCreate, client: DatabaseClientDep):
     """Register a new user with the app"""
 
     create_user = UserCreate.model_validate(user)
@@ -79,7 +79,7 @@ async def register_new_user(user: UserCreate, db: DatabaseClientDep):
     hashed_password = pwd_context.hash(user.password)
     db_user.hashed_password = hashed_password
 
-    users_collection: AsyncIOMotorCollection = db.get_collection("users")
+    users_collection: AsyncIOMotorCollection = client.get_collection("users")
     new_user = await users_collection.insert_one(db_user.model_dump(by_alias=True, exclude=["id"]))
     created_user = await users_collection.find_one({"_id": new_user.inserted_id})
     return created_user
