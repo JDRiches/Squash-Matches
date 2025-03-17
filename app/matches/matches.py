@@ -41,6 +41,7 @@ class Match(BaseModel):
     owner: str | None = Field(default= None)
     winner: str | None = Field(default= None)
     date_time: datetime = Field()
+    confirmed: bool = Field(default=False)
 
     model_config = ConfigDict(
         populate_by_name=True,
@@ -103,6 +104,20 @@ async def get_match_history(user_id: str, user: GetUserDep, client: DatabaseClie
     match_collection: AsyncIOMotorCollection = client.get_collection("matches")
 
     matches = await match_collection.find({"$or": [{"p1_id": user_id}, {"p2_id": user_id}]}).to_list(1000)
-    first_match = Match(**matches[0])
 
     return MatchCollection(matches = matches, )
+
+@matches_router.get("/pending/{user_id}", response_model=MatchCollection)
+async def get_pending_matches(user_id: str, user: GetUserDep, client: DatabaseClientDep):
+    
+    # Can only get the match history of yourself, TODO: Make this a dep or middleware
+    if user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid permissions",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    match_collection: AsyncIOMotorCollection = client.get_collection("matches")
+    pending_matches = await match_collection.find({"$or": [{"p1_id": user_id}, {"p2_id": user_id}], "owner": {"$ne": user_id}, "confirmed": False}) .to_list(1000)
+    return MatchCollection(matches=pending_matches)
