@@ -109,7 +109,7 @@ async def get_match_history(user_id: str, user: GetUserDep, client: DatabaseClie
 
 @matches_router.get("/pending/{user_id}", response_model=MatchCollection)
 async def get_pending_matches(user_id: str, user: GetUserDep, client: DatabaseClientDep):
-    
+    """Get the matches of a """
     # Can only get the match history of yourself, TODO: Make this a dep or middleware
     if user.id != user_id:
         raise HTTPException(
@@ -121,3 +121,7 @@ async def get_pending_matches(user_id: str, user: GetUserDep, client: DatabaseCl
     match_collection: AsyncIOMotorCollection = client.get_collection("matches")
     pending_matches = await match_collection.find({"$or": [{"p1_id": user_id}, {"p2_id": user_id}], "owner": {"$ne": user_id}, "confirmed": False}) .to_list(1000)
     return MatchCollection(matches=pending_matches)
+
+@matches_router.post("/pending/{match_id}")
+async def confirm_pending_match(match_id: str, user: GetUserDep, client: DatabaseClientDep):
+    
