@@ -1,4 +1,5 @@
 from typing import Annotated, List, Optional
+from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Query, status
 
 from datetime import datetime
@@ -122,6 +123,24 @@ async def get_pending_matches(user_id: str, user: GetUserDep, client: DatabaseCl
     pending_matches = await match_collection.find({"$or": [{"p1_id": user_id}, {"p2_id": user_id}], "owner": {"$ne": user_id}, "confirmed": False}) .to_list(1000)
     return MatchCollection(matches=pending_matches)
 
-@matches_router.post("/pending/{match_id}")
+@matches_router.post("/pending/{match_id}", response_model=Match)
 async def confirm_pending_match(match_id: str, user: GetUserDep, client: DatabaseClientDep):
+    match_collection: AsyncIOMotorCollection = client.get_collection("matches")
+
+    match_data = await match_collection.find_one({"_id": ObjectId(match_id)})
+    print(match_data)
+    match = Match(**match_data)
+    print("POST DUMP")
+
+    if match.owner != user.id and (match.p1_id == user.id or match.p2_id == user.id):
+        await match_collection.update_one({"_id": ObjectId(match_id)}, {"$set": {"confirmed": True}})
+        updated_match = await match_collection.find_one({"_id": ObjectId(match_id)})
+        return updated_match
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid permissions",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     
+
